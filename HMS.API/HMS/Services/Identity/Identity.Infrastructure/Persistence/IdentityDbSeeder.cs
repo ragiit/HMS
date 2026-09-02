@@ -1,9 +1,9 @@
-using HMS.Identity.Application.Abstractions;
-using HMS.Identity.Domain;
-using HMS.Identity.Domain.Entities;
+using Identity.Application.Abstractions;
+using Identity.Domain;
+using Identity.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace HMS.Identity.Infrastructure.Persistence;
+namespace Identity.Infrastructure.Persistence;
 
 /// <summary>
 /// Seeder data awal Identity Service: role default & user admin.

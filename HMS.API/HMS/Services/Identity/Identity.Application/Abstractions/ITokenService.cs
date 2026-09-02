@@ -1,4 +1,4 @@
-namespace HMS.Identity.Application.Abstractions;
+namespace Identity.Application.Abstractions;
 
 /// <summary>
 /// Abstraksi hashing password (diimplementasikan di Infrastructure).

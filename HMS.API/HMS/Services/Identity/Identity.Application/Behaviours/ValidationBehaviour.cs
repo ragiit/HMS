@@ -1,7 +1,7 @@
 using FluentValidation;
 using MediatR;
 
-namespace HMS.Identity.Application.Behaviours;
+namespace Identity.Application.Behaviours;
 
 /// <summary>
 /// Pipeline behavior MediatR yang mengeksekusi validators sebelum handler dipanggil.

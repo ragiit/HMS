@@ -1,8 +1,8 @@
-using HMS.Identity.Application.Abstractions;
+using Identity.Application.Abstractions;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using System.Security.Cryptography;
 
-namespace HMS.Identity.Infrastructure.Security;
+namespace Identity.Infrastructure.Security;
 
 /// <summary>
 /// Hashing password PBKDF2 (Rfc2898) dengan per-iterations tinggi dan salt acak,

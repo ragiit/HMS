@@ -2,7 +2,7 @@ using HMS.Shared.Abstractions;
 using HMS.Shared.Abstractions.Exceptions;
 using System.Net;
 
-namespace HMS.Identity.Api.Middleware;
+namespace Identity.Api.Middleware;
 
 /// <summary>
 /// Global exception handling: memetakan HmsException ke status HTTP yang sesuai dan

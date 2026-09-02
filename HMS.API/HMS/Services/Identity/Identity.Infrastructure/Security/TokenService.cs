@@ -1,8 +1,8 @@
-using HMS.Identity.Application.Abstractions;
 using HMS.Shared.Security;
+using Identity.Application.Abstractions;
 using System.Security.Cryptography;
 
-namespace HMS.Identity.Infrastructure.Security;
+namespace Identity.Infrastructure.Security;
 
 /// <summary>
 /// Implementasi ITokenService yang membungkus JwtTokenService (Shared.Security)

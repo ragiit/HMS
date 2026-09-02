@@ -1,7 +1,7 @@
-using HMS.Identity.Application.DTOs;
+using Identity.Application.DTOs;
 using MediatR;
 
-namespace HMS.Identity.Application.Commands;
+namespace Identity.Application.Commands;
 
 /// <summary>Login user, menghasilkan JWT + refresh token.</summary>
 public sealed record LoginCommand(string Username, string Password, string? ClientId = null) : IRequest<AuthResultDto>;

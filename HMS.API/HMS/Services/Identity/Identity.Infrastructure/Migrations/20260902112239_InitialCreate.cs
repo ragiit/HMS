@@ -1,9 +1,8 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace HMS.Identity.Infrastructure.Migrations
+namespace Identity.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration

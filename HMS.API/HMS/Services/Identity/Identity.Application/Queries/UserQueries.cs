@@ -1,8 +1,8 @@
-using HMS.Identity.Application.DTOs;
 using HMS.Shared.Abstractions;
+using Identity.Application.DTOs;
 using MediatR;
 
-namespace HMS.Identity.Application.Queries;
+namespace Identity.Application.Queries;
 
 /// <summary>Get user by ID.</summary>
 public sealed record GetUserByIdQuery(Guid UserId) : IRequest<UserDto?>;

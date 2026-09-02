@@ -1,6 +1,6 @@
 using HMS.Shared.Abstractions.Domain;
 
-namespace HMS.Identity.Domain.Events;
+namespace Identity.Domain.Events;
 
 /// <summary>
 /// Domain event saat user dinonaktifkan (dipublish sebagai integration event user.deactivated).

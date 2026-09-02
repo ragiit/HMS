@@ -1,7 +1,7 @@
 using FluentValidation;
-using HMS.Identity.Application.Commands;
+using Identity.Application.Commands;
 
-namespace HMS.Identity.Application.Validators;
+namespace Identity.Application.Validators;
 
 public sealed class LoginCommandValidator : AbstractValidator<LoginCommand>
 {

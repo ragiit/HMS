@@ -1,16 +1,16 @@
-using HMS.Identity.Application.Abstractions;
-using HMS.Identity.Infrastructure.Persistence;
-using HMS.Identity.Infrastructure.Persistence.Repositories;
-using HMS.Identity.Infrastructure.Security;
 using HMS.Shared.Abstractions.Persistence;
 using HMS.Shared.Messaging;
 using HMS.Shared.Outbox;
 using HMS.Shared.Security;
+using Identity.Application.Abstractions;
+using Identity.Infrastructure.Persistence;
+using Identity.Infrastructure.Persistence.Repositories;
+using Identity.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace HMS.Identity.Infrastructure;
+namespace Identity.Infrastructure;
 
 /// <summary>
 /// Registrasi dependensi Infrastructure layer (EF Core, repositori, keamanan, outbox).
@@ -21,8 +21,8 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("IdentityDb")
-            ?? throw new InvalidOperationException("Connection string 'IdentityDb' tidak ditemukan.");
+        var connectionString = configuration.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' tidak ditemukan.");
 
         services.AddDbContext<IdentityDbContext>(options =>
             options.UseSqlServer(connectionString));
@@ -40,8 +40,8 @@ public static class DependencyInjection
         services.AddScoped<ITokenService, TokenService>();
 
         // Messaging + outbox processor
-        //services.AddHmsMessaging(configuration);
-        //services.AddHmsOutboxProcessor();
+        services.AddHmsMessaging(configuration);
+        services.AddHmsOutboxProcessor();
 
         // Seeder
         services.AddScoped<IdentityDbSeeder>();

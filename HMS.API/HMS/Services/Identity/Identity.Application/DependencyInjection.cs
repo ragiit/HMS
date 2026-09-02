@@ -1,9 +1,9 @@
 using FluentValidation;
-using HMS.Identity.Application.Behaviours;
+using Identity.Application.Behaviours;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 
-namespace HMS.Identity.Application;
+namespace Identity.Application;
 
 /// <summary>
 /// Registrasi dependensi Application layer (MediatR + validators).

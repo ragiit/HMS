@@ -1,12 +1,12 @@
-using HMS.Identity.Application.Abstractions;
-using HMS.Identity.Application.Commands;
-using HMS.Identity.Application.DTOs;
-using HMS.Identity.Domain.Entities;
 using HMS.Shared.Abstractions.Exceptions;
 using HMS.Shared.Abstractions.Persistence;
+using Identity.Application.Abstractions;
+using Identity.Application.Commands;
+using Identity.Application.DTOs;
+using Identity.Domain.Entities;
 using MediatR;
 
-namespace HMS.Identity.Application.Handlers;
+namespace Identity.Application.Handlers;
 
 public sealed class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, AuthResultDto>
 {

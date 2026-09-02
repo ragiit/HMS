@@ -1,8 +1,8 @@
-using HMS.Identity.Application.Abstractions;
-using HMS.Identity.Domain.Entities;
+using Identity.Application.Abstractions;
+using Identity.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace HMS.Identity.Infrastructure.Persistence.Repositories;
+namespace Identity.Infrastructure.Persistence.Repositories;
 
 public sealed class UserRepository : IUserRepository
 {

@@ -1,4 +1,4 @@
-namespace HMS.Identity.Application.DTOs;
+namespace Identity.Application.DTOs;
 
 /// <summary>Hasil login/refresh: access token + refresh token + info user.</summary>
 public sealed class AuthResultDto

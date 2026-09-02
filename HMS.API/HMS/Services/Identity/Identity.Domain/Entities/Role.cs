@@ -1,6 +1,6 @@
 using HMS.Shared.Abstractions.Domain;
 
-namespace HMS.Identity.Domain.Entities;
+namespace Identity.Domain.Entities;
 
 /// <summary>
 /// Role pengguna (Admin, Doctor, Nurse, FrontDesk, Pharmacist, LabStaff,

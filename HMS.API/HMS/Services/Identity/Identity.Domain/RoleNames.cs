@@ -1,4 +1,4 @@
-namespace HMS.Identity.Domain;
+namespace Identity.Domain;
 
 /// <summary>
 /// Konstanta nama role sesuai SDD Identity Service (seed data).

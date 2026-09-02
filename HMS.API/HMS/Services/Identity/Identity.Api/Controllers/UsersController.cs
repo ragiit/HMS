@@ -1,15 +1,17 @@
-using HMS.Identity.Application.Commands;
-using HMS.Identity.Application.DTOs;
-using HMS.Identity.Application.Queries;
+using Identity.Application.Commands;
+using Identity.Application.DTOs;
+using Identity.Application.Queries;
 using HMS.Shared.Abstractions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HMS.Identity.Api.Controllers;
+namespace Identity.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/users")]
+//[Authorize(Roles = "Admin")]
+[Authorize]
 public sealed class UsersController : ControllerBase
 {
     private readonly IMediator _mediator;

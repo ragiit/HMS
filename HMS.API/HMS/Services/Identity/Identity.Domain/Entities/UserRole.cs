@@ -1,4 +1,4 @@
-namespace HMS.Identity.Domain.Entities;
+namespace Identity.Domain.Entities;
 
 /// <summary>
 /// Join entity User ↔ Role.

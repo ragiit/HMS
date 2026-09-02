@@ -1,7 +1,7 @@
 using HMS.Shared.Outbox;
 using Microsoft.EntityFrameworkCore;
 
-namespace HMS.Identity.Infrastructure.Persistence;
+namespace Identity.Infrastructure.Persistence;
 
 /// <summary>
 /// Implementasi IOutboxStore berbasis IdentityDbContext (tabel OutboxEvents).

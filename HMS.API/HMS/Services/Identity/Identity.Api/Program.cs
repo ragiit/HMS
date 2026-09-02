@@ -1,8 +1,8 @@
-using HMS.Identity.Api.Middleware;
-using HMS.Identity.Application;
-using HMS.Identity.Infrastructure;
-using HMS.Identity.Infrastructure.Persistence;
 using HMS.Shared.Security;
+using Identity.Api.Middleware;
+using Identity.Application;
+using Identity.Infrastructure;
+using Identity.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;

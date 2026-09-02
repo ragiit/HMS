@@ -3,7 +3,7 @@ using HMS.Shared.Abstractions.Persistence;
 using HMS.Shared.Outbox;
 using System.Text.Json;
 
-namespace HMS.Identity.Infrastructure.Persistence;
+namespace Identity.Infrastructure.Persistence;
 
 /// <summary>
 /// Unit of Work yang me-save changes dan menulis domain events aggregate ke tabel

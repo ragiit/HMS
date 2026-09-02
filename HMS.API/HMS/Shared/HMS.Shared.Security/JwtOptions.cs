@@ -7,7 +7,7 @@ public sealed class JwtOptions
 {
     public const string SectionName = "Jwt";
 
-    public string Issuer { get; set; } = "HMS.Identity";
+    public string Issuer { get; set; } = "Identity";
     public string Audience { get; set; } = "hms-api";
     public string Secret { get; set; } = string.Empty;
     public int AccessTokenExpiryMinutes { get; set; } = 60;

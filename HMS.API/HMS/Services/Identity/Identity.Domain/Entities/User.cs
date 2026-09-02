@@ -1,8 +1,8 @@
-using HMS.Identity.Domain.Events;
 using HMS.Shared.Abstractions.Domain;
 using HMS.Shared.Abstractions.Persistence;
+using Identity.Domain.Events;
 
-namespace HMS.Identity.Domain.Entities;
+namespace Identity.Domain.Entities;
 
 /// <summary>
 /// Aggregate Root utk user. Menyimpan kredensial, status aktivasi/lockout, dan relasi role.

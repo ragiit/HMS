@@ -1,12 +1,12 @@
-using HMS.Identity.Application.Abstractions;
-using HMS.Identity.Application.DTOs;
-using HMS.Identity.Application.Queries;
-using HMS.Identity.Domain.Entities;
 using HMS.Shared.Abstractions;
 using HMS.Shared.Abstractions.Persistence;
+using Identity.Application.Abstractions;
+using Identity.Application.DTOs;
+using Identity.Application.Queries;
+using Identity.Domain.Entities;
 using MediatR;
 
-namespace HMS.Identity.Application.Handlers;
+namespace Identity.Application.Handlers;
 
 public sealed class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, UserDto?>
 {

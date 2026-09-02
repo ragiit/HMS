@@ -1,8 +1,8 @@
-using HMS.Identity.Domain.Events;
 using HMS.Shared.Abstractions.Domain;
 using HMS.Shared.Contracts.Identity;
+using Identity.Domain.Events;
 
-namespace HMS.Identity.Infrastructure.Persistence;
+namespace Identity.Infrastructure.Persistence;
 
 /// <summary>
 /// Implementasi pemetaan domain event → integration event untuk Identity Service.

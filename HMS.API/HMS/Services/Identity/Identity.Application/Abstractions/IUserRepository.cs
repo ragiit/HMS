@@ -1,6 +1,6 @@
-using HMS.Identity.Domain.Entities;
+using Identity.Domain.Entities;
 
-namespace HMS.Identity.Application.Abstractions;
+namespace Identity.Application.Abstractions;
 
 /// <summary>
 /// Repository khusus user yang mampu memuat relasi Roles secara eager

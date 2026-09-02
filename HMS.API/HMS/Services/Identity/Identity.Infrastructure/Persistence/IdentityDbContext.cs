@@ -1,8 +1,8 @@
-using HMS.Identity.Domain.Entities;
 using HMS.Shared.Outbox;
+using Identity.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace HMS.Identity.Infrastructure.Persistence;
+namespace Identity.Infrastructure.Persistence;
 
 /// <summary>
 /// DbContext Identity Service (database HMS_Identity). Menganut Database-per-Service pattern.

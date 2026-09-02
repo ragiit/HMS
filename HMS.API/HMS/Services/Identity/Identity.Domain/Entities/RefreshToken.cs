@@ -1,6 +1,6 @@
 using HMS.Shared.Abstractions.Domain;
 
-namespace HMS.Identity.Domain.Entities;
+namespace Identity.Domain.Entities;
 
 /// <summary>
 /// Refresh token yang disimpan di DB (bukan stateless) agar bisa di-revoke/rotate,

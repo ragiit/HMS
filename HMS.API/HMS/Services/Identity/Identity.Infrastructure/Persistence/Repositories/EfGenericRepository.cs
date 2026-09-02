@@ -3,7 +3,7 @@ using HMS.Shared.Abstractions.Persistence;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
-namespace HMS.Identity.Infrastructure.Persistence.Repositories;
+namespace Identity.Infrastructure.Persistence.Repositories;
 
 /// <summary>
 /// Implementasi EF Core dari <see cref="IGenericRepository{T}"/>.
