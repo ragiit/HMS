@@ -10,7 +10,6 @@ namespace HMS.Identity.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/users")]
-[Authorize(Roles = "Admin")]
 public sealed class UsersController : ControllerBase
 {
     private readonly IMediator _mediator;
