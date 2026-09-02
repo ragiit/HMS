@@ -1,6 +1,9 @@
 # HMS - Hospital Management System
 ## Software Design Document (SDD)
 
+> **Lokasi repositori**: Dokumen ini berada di `HMS.API/docs/SDD/`
+> Semua path relatif di bawah mengacu pada direktori SDD ini.
+
 Dokumen ini berisi rancangan lengkap Hospital Management System (HMS) menggunakan arsitektur **Microservices** dengan **.NET 10**.
 
 ---
@@ -69,3 +72,4 @@ Dokumen ini berisi rancangan lengkap Hospital Management System (HMS) menggunaka
 | Message Bus | RabbitMQ |
 | Cache | Redis |
 | Authentication | JWT (per service) + Refresh Token |
+

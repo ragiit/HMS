@@ -51,6 +51,17 @@ CodeCoverage/
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
 
+# Visual Studio cache / IDE
+.vs/
+.vs/**
+
+# Solution build output (jika diperlukan)
+[Hh]ms.API/bin/
+[Hh]ms.API/obj/
+
+# Frontend node modules (HMS.WEB nanti)
+node_modules/
+
 # NUnit
 *.VisualState.xml
 TestResult.xml

@@ -1,0 +1,22 @@
+<Solution>
+  <Folder Name="/ApiGateway/">
+    <Project Path="ApiGateway/HMS.ApiGateway/HMS.ApiGateway.csproj" Id="4ed2147c-392e-48c3-b2b2-bed938e55170" />
+  </Folder>
+  <Folder Name="/Shared/">
+    <Project Path="Shared/HMS.Shared.Abstractions/HMS.Shared.Abstractions.csproj" Id="6d719fd9-736b-49e3-a1f2-416ea82acebb" />
+    <Project Path="Shared/HMS.Shared.Caching/HMS.Shared.Caching.csproj" Id="d7a1321a-6e59-402e-9ef8-6fa5cb68e5b7" />
+    <Project Path="Shared/HMS.Shared.Contracts/HMS.Shared.Contracts.csproj" Id="59ec5f0b-dbbb-49bf-8cd9-77e7e684187d" />
+    <Project Path="Shared/HMS.Shared.Inbox/HMS.Shared.Inbox.csproj" Id="a1b2c3d4-0001-4a5b-9c0d-111111111111" />
+    <Project Path="Shared/HMS.Shared.Logging/HMS.Shared.Logging.csproj" Id="a1b2c3d4-0002-4a5b-9c0d-222222222222" />
+    <Project Path="Shared/HMS.Shared.Messaging/HMS.Shared.Messaging.csproj" Id="c258dff8-8c3d-43aa-8075-5aa8c54c5653" />
+    <Project Path="Shared/HMS.Shared.Outbox/HMS.Shared.Outbox.csproj" Id="c9703276-9753-4347-a578-ff544ca7fcb7" />
+    <Project Path="Shared/HMS.Shared.Resilience/HMS.Shared.Resilience.csproj" Id="a1b2c3d4-0003-4a5b-9c0d-333333333333" />
+    <Project Path="Shared/HMS.Shared.Security/HMS.Shared.Security.csproj" Id="a1b2c3d4-0004-4a5b-9c0d-444444444444" />
+  </Folder>
+  <Folder Name="/Services/Identity/">
+    <Project Path="Services/Identity/Identity.Api/Identity.Api.csproj" Id="b1c2d3e4-1001-4a5b-9c0d-000000000001" />
+    <Project Path="Services/Identity/Identity.Application/Identity.Application.csproj" Id="b1c2d3e4-1002-4a5b-9c0d-000000000002" />
+    <Project Path="Services/Identity/Identity.Domain/Identity.Domain.csproj" Id="b1c2d3e4-1003-4a5b-9c0d-000000000003" />
+    <Project Path="Services/Identity/Identity.Infrastructure/Identity.Infrastructure.csproj" Id="b1c2d3e4-1004-4a5b-9c0d-000000000004" />
+  </Folder>
+</Solution>
