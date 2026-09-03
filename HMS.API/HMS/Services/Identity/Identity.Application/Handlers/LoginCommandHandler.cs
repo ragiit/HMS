@@ -14,17 +14,20 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResu
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITokenService _tokenService;
     private readonly IUserRepository _userRepository;
+    private readonly IGenericRepository<RefreshToken> _refreshTokens;
 
     public LoginCommandHandler(
         IUnitOfWork unitOfWork,
         IPasswordHasher passwordHasher,
         ITokenService tokenService,
-        IUserRepository userRepository)
+        IUserRepository userRepository,
+        IGenericRepository<RefreshToken> refreshTokens)
     {
         _unitOfWork = unitOfWork;
         _passwordHasher = passwordHasher;
         _tokenService = tokenService;
         _userRepository = userRepository;
+        _refreshTokens = refreshTokens;
     }
 
     public async Task<AuthResultDto> Handle(LoginCommand request, CancellationToken ct)
@@ -32,6 +35,9 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResu
         var user = await _userRepository.GetByLoginAsync(request.Username, ct);
         if (user is null || !user.IsActive || user.IsDeleted)
             throw new UnauthorizedException("Invalid username or password");
+
+        if (user.IsLockedOut && user.LockoutEndDate <= DateTimeOffset.UtcNow)
+            user.ResetFailedLogin();
 
         if (user.IsLockedOut)
             throw new UnauthorizedException("Account is locked. Try again later.");
@@ -58,6 +64,7 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResu
 
         var refresh = _tokenService.GenerateRefreshToken();
         var refreshToken = new RefreshToken(user.Id, refresh, DateTimeOffset.UtcNow.AddDays(7), request.ClientId);
+        await _refreshTokens.AddAsync(refreshToken, ct);
         await _unitOfWork.SaveChangesAsync(ct);
 
         return new AuthResultDto

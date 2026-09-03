@@ -1,97 +1,136 @@
-# Medical Record Service - Detail
+# Medical Record Service - Blueprint
 
-## 1. Overview
-Menangani **Electronic Medical Records (EMR)** digital: rekam medis, tanda vital, diagnosis (ICD-10), dan rencana pengobatan.
+> **Status**: 🔲 BELUM diimplementasikan (draft sesuai pola Identity · `Guid` · `/api/v1`). Data SIM/Dok.
 
-## 2. Bounded Context
-- Buat/read/update rekam medis per kunjungan
-- Vital signs tracking
-- Diagnosis (ICD-10 codes)
-- Plan & summary
-- Follow-up scheduling
-- Confidentiality / access control pada rekam medis
+## 1. Overview & Peran
+Menyimpan **Electronic Medical Record (EMR)** per kunjungan: SOAP (Subjektif-Objektif-Assessment-Plan), tanda vital, diagnosis ICD-10, tindakan, dan perintah (resep/order lab). Data paling sensitif di rumah sakit ⇒ kontrol akses & audit yang ketat.
 
-## 3. Domain Model
+## 2. Tanggung jawab / fungsi utama
+1. Membuat/update draf rekam per kunjungan.
+2. Input tanda vital (time-series).
+3. Diagnosis (ICD-10, primer/sekunder) & plan.
+4. Tindakan/prosedur (treatment) + list order lab.
+5. **Finalisasi** rekam (kunci; amend tercatat).
+6. Enforce **access policy** per role & audit log.
+7. Kirim order ke Pharmacy/Lab via event (untuk konsistensi lintas service).
+
+## 3. Bounded context
+- Rekam medis (SOAP & metadata)
+- Vital signs (riwayat)
+- Diagnosis (ICD-10) & ICD-10 master (seed/import)
+- Rencana pengobatan/tindakan/follow-up
+- Audit & kontrol akses (privacy)
+
+## 4. Domain model (Guid)
 ```
-┌────────────────────────────┐
-│ MedicalRecord (Aggregate)  │
-│  - PatientId               │
-│  - DoctorId, AppointmentId │
-│  - Subjective/Objective    │
-│  - Assessment (diagnosis)  │
-│  - Plan                    │
-│  - VitalSigns              │
-│  - Status (Draft/Final)    │
-│  + Finalize(dc)            │
-│  + AddDiagnosis()          │
-│  + AddVitalSigns()         │
-└─────────────┬──────────────┘
-              │
-┌─────────────┴──────────────┐
-│  Diagnosis (Entity)        │
-│  - ICD10Code               │
-│  - IsPrimary               │
-│  VitalSign (ValueObject)   │
-└────────────────────────────┘
+MedicalRecord (AggregateRoot<Guid>; IAuditable)
+ ├─ PatientId (Guid ref patient), DoctorId (Guid), AppointmentId?/VisitId
+ ├─ RecordNumber (uniek), VisitDate, VisitType, Department
+ ├─ SOAP: Subjective, Objective, Assessment, Plan, Summary
+ ├─ Status (Draft/Finalized/Closed), IsConfidential
+ ├─ FinalizedBy/At, FollowUpNeeded/Date
+ ├─ VitalSigns : ICollection<VitalSign>   (BE)
+ ├─ Diagnoses   : ICollection<Diagnosis>  (ICD10)
+ ├─ Treatments  : ICollection<Treatment>
+ ├─ PrescriptionOrders : ICollection<PrescriptionOrder> (forward pharmacy)
+ ├─ LabOrdersRef : ICollection<LabOrderRef> (order lab)
+ ├─ StartDraft(), Finalize(by), AddDiagnosis, AddVitalSign, AddTreatment
+ ├─ AddPrescriptionOrder(), AddLabOrderRef(), Amend(note)
+
+VitalSign  (time-series row): temp, BP sistol/diast, HR, RR, SpO2, weight, height, BMI, glucose, pain 0-10
+Diagnosis : ICD10Code, Name, IsPrimary, Type(Working/Final/Rule-Out)
+Treatment : code,name,desc,by,date,result,billingRef
+ICD10Code : Code, Name (master; ter-seed)
 ```
+> ⚠️ Dok db lama memakai `Bigint/Int`; konversi **Guid** utk consistency HMS. ID ekternal pasien/dokter Guid.
 
-## 4. Security / Access Control
-| Role | Akses |
-|---|---|
-| Doctor | Full read/write pada rekam miliknya, read pada pasien yang pernah ditangani |
-| Nurse | Write vital signs, read records pasien yang ditugaskan |
-| Admin | Full read (audit) |
-| Patient | Read own record (terbatas, tidak confidential) |
-| Other | Denied |
-
-## 5. CQRS
-
+## 5. CQRS yang akan dibuat
 ### Commands
-| Command | Handler |
-|---|---|
-| `CreateMedicalRecordCommand` | Create new record (draft) |
-| `UpdateMedicalRecordCommand` | Update draft/record |
-| `AddVitalSignsCommand` | Add vital signs |
-| `AddDiagnosisCommand` | Add ICD-10 diagnosis |
-| `FinalizeRecordCommand` | Finalize (kunci dari edit by same doctor? menggunakan workflow) |
-| `AddTreatmentCommand` | Add procedure/action |
-| `CreatePrescriptionOrderCommand` | Create prescription order (publikasi ke Pharmacy) |
+| Command |
+|---|
+| `CreateRecordCommand(patientId, doctorId, visit…)` → draft |
+| `UpdateDraftCommand(id, soap…)` (hanya saat Draft) |
+| `AddVitalSignsCommand(recordId, dto)` |
+| `AddDiagnosisCommand(recordId, icd, name, isPrimary)` |
+| `AddTreatmentCommand(recordId, dto)` |
+| `FinalizeRecordCommand(recordId, by)` |
+| `CreatePrescriptionOrderCommand(recordId, items)` → untuk Pharmacy |
+| `CreateLabOrderCommand(recordId, tests)` → untuk Lab |
+| `AmendRecordCommand(id, note)` (pasca-final, dgn jejak) |
 
 ### Queries
-| Query | Handler |
-|---|---|
-| `GetPatientRecordsQuery` | All records by patient |
-| `GetRecordByIdQuery` | Detail |
-| `GetRecentVitalSignsQuery` | Latest vital signs |
-| `GetDiagnosisHistoryQuery` | Diagnosis trends |
+| Query |
+|---|
+| `GetPatientRecordsQuery(patientId, page)` |
+| `GetRecordByIdQuery(id)` |
+| `GetRecentVitalSignsQuery(patientId)` |
+| `GetDiagnosisHistoryQuery(patientId)` |
+| `GetPendingForFinalizeQuery` (opsional) |
 
 ## 6. Events
-
 ### Publishes
-| Event | Ketika | Konsumen |
+| Integration Event | Saat | Target |
 |---|---|---|
-| `medical_record.created` | Rekam dibuat | - |
-| `medical_record.finalized` | Rekam difinalisasi | Notification (patient can view), Pharmacy (if prescription) |
-| `prescription.order_created` | Resep dibuat | Pharmacy (create prescription) |
-| `lab.order_created` | Order lab dibuat | Laboratory (create lab order) |
-| `vital_signs.updated` | Vital signs diubah | - |
+| `MedicalRecordCreatedEvent` | draft dibuat | -/Notification |
+| `MedicalRecordFinalizedEvent` | final | Notification (pasien), Pharmacy (jika resep), Lab |
+| `PrescriptionOrderRequestedEvent` | resep dibuat | Pharmacy |
+| `LabOrderRequestedEvent` | order lab | Laboratory |
+| `VitalSignsUpdatedEvent` | vital baru | (opsional) |
 
 ### Subscribes
 | Event | Aksi |
 |---|---|
-| `appointment.completed` | Create medical record for appointment |
+| `AppointmentCompletedEvent` | siapkan/buka draft rekam utk kunjungan itu |
+| (results feedback dari Lab/Pharmacy bila perlu) | update status |
 
-## 7. Dependencies
-**Outbound calls**:
-- Patient Service (get info)
-- Doctor Service (get doctor)
-- Pharmacy (create prescription)
-- Laboratory (create lab order)
+## 7. Access Control (role) — blueprint
+| Role | Akses |
+|---|---|
+| Doctor | tulis&baca rekam ybs; baca pasien yang pernah ditangani |
+| Nurse | tulis vital; baca rekam pasien bertugas |
+| Patient (login) | baca sebagian (non-confidential) |
+| Admin | read/audit |
+| Lainnya | deny |
 
-**Inbound calls**: None major. (Lab hasil & pharmacy hasil feeding back via event)
+> Implementasikan lewat policy/claim + middleware di tiap controller & service method (sebaiknya data horizontaly-gated bila pasien/doctor id di klaim).
 
-## 8. Design Decisions
-- Rekam medis sensitif; audit log lengkap
-- Menggunakan **ICD-10** untuk diagnosis codes
-- Data vital adalah separate tables untuk time-series
-- Record **final** setelah doctor menandatangani; hanya bisa di-amend dengan catatan khusus
+## 8. API Endpoint preview (`/api/v1`)
+| Method | Path | Deskripsi |
+|---|---|---|
+| POST | `/medical-records` | buat draf |
+| GET | `/medical-records/patient/{patientId}` | riwayat pasien |
+| GET | `/medical-records/{id}` | detail |
+| PUT | `/medical-records/{id}` | update draf |
+| POST | `/medical-records/{id}/finalize` | finalisasi |
+| POST | `/medical-records/{id}/vital-signs` | tambah vital |
+| GET | `/medical-records/{patientId}/vital-signs/latest` | vital terakhir |
+| POST | `/medical-records/{id}/diagnoses` | tambah diagnosis |
+| GET | `/medical-records/{id}/diagnoses` | list diagnosis |
+| POST | `/medical-records/{id}/treatments` | tambah tindakan |
+| POST | `/medical-records/{id}/prescriptions` | buat order resep |
+| POST | `/medical-records/{id}/lab-orders` | buat order lab |
+
+## 9. Dependencies
+- Out sync: Patient (info), Doctor (info), Pharmacy/Lab (order dibuat lewat event) — API bila diperlukan.
+- In sync: dipanggil MedicalRecord oleh Lab/Pharmacy bila feed-back.
+- Out async: finalisasi & order ke Rabbit.
+- In async: appointment.completed memicu draf rekam.
+
+## 10. DB pointer
+`04-Database-Design/05-…` tabel `MedicalRecords, VitalSigns, Diagnoses, Treatments, PrescriptionOrders, ICD10(master), Outbox/Inbox`. Ubah ke Guid saat imp. Unique RecordNumber; index pasien/date & doctor/date; time-series vital.
+
+## 11. Urutan implement
+1. Scaffold.
+2. Entity + config + migration (draft/final alur).
+3. ICD-10 seed (atau import via migration).
+4. Create draft + GetPatientRecords/GetRecordById.
+5. Vital + diagnoses + treatments (sering dipakai dokter saat kunjungan).
+6. Finalize & amend (untuk kunci).
+7. Event order resep/lab via outbox.
+8. Controller + access control role.
+
+## 12. Catatan keputusan nnti implement
+- Data SOAP: JSONB dense vs normalisasi? (dok normalisasi banyak tabel; mungkin campuran).
+- Amend pasca-final: revisi vs lampiran append-only (tersedia security menyetujui).
+- Who may create: bila appointment selesai otomatis draf dibuat operator? dan siapa final.
+- Integrasi prescripsi/lab order/order di sini vs di service masing-masing yang mem-publish global order dgn referensi.

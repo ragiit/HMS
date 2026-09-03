@@ -52,8 +52,18 @@ public sealed class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCom
 
         // Rotate refresh token
         var newRefresh = _tokenService.GenerateRefreshToken();
+
+        // Revoke token lama & catat token penggantinya
         stored.Revoke("rotated", newRefresh);
         _refreshTokens.Update(stored);
+
+        var newRefreshToken = new RefreshToken(
+            stored.UserId,
+            newRefresh,
+            DateTimeOffset.UtcNow.AddDays(7),
+            stored.ClientId);
+        await _refreshTokens.AddAsync(newRefreshToken, ct);
+
         await _unitOfWork.SaveChangesAsync(ct);
 
         return new AuthResultDto

@@ -46,65 +46,148 @@ Response pagination:
 
 ---
 
-## 2. Identity Service Endpoints
+## 2. Identity Service Endpoints (riil — `Identity.Api`, prefix `/api/v1`)
+
+> Service ini **sudah diimplementasikan**. Kontrak di bawah disamakan persis dengan `AuthController.cs` & `UsersController.cs`.
+> Semua id bertipe **Guid string**. Semua response dibungkus `ApiResponse<T>`:
+> `{ success, message, errors, data }`. Pesan berbahasa Indonesia sesuai handler.
 
 ### Authentication
-| Method | URL | Deskripsi | Auth | Role |
-|---|---|---|---|---|
-| POST | `/api/auth/login` | Login, return JWT + refresh token | Public | - |
-| POST | `/api/auth/refresh` | Refresh access token | Public | - |
-| POST | `/api/auth/logout` | Revoke refresh token | Bearer | All |
-| POST | `/api/auth/change-password` | Ganti password user | Bearer | All |
+| Method | URL | Deskripsi | Auth |
+|---|---|---|---|
+| POST | `/api/v1/auth/login` | Login (username/email + password) → JWT + refresh token | AllowAnonymous |
+| POST | `/api/v1/auth/refresh` | Perpanjang access token dgn refresh token (rotasi) | AllowAnonymous |
+| POST | `/api/v1/auth/revoke` | Logout: cabut (revoke) 1 refresh token | Bearer |
+| POST | `/api/v1/auth/change-password` | Ganti password user login | Bearer |
+
+> Catatan: endpoint logout di kode bernama `revoke` (bukan `logout`, tidak ada `RolesController`, tidak ada endpoint `GET /users/{id}/roles`).
 
 ### User Management
-| Method | URL | Deskripsi | Auth | Role |
-|---|---|---|---|---|
-| POST | `/api/users` | Buat user baru | Bearer | Admin |
-| GET | `/api/users` | List semua users | Bearer | Admin |
-| GET | `/api/users/{id}` | Detail user | Bearer | Admin |
-| PUT | `/api/users/{id}` | Update user | Bearer | Admin |
-| DELETE | `/api/users/{id}` | Hapus user (soft delete) | Bearer | Admin |
-| PUT | `/api/users/{id}/roles` | Assign roles ke user | Bearer | Admin |
-| GET | `/api/users/{id}/roles` | List roles user | Bearer | Admin |
+| Method | URL | Deskripsi | Auth |
+|---|---|---|---|
+| POST | `/api/v1/users` | Registrasi user baru (body `RegisterUserCommand`), return id Guid | Bearer |
+| GET | `/api/v1/users` | List user ter-paginasi (query page/pageSize/search) | Bearer |
+| GET | `/api/v1/users/{id:guid}` | Detail user + roles → UserDto | Bearer |
+| PUT | `/api/v1/users/{id:guid}` | Update profil (non-kredensial) | Bearer |
+| DELETE | `/api/v1/users/{id:guid}` | Soft-delete user (set IsDeleted + event) | Bearer |
+| POST | `/api/v1/users/{id:guid}/roles` | Assign roles (replace keseluruhan roles user) | Bearer |
+| GET | `/api/v1/users/roles` | List master role aktif | Bearer |
 
-### Roles
-| Method | URL | Deskripsi | Auth | Role |
-|---|---|---|---|---|
-| GET | `/api/roles` | List semua roles | Bearer | Admin |
-| POST | `/api/roles` | Buat role baru | Bearer | Admin |
+> `UsersController` saat ini `[Authorize]` (belum per-role eksplisit) — **TODO** perketat `[Authorize(Roles="Admin")]` pada action sebagai berikutnya.
 
-### Request/Response Contracts
+### Request/Response contracts (riil)
 
-#### POST /api/auth/login
+#### POST /api/v1/auth/login
 ```json
-// Request
+// Request body: LoginCommand  -> { username, password, clientId? }
 {
   "username": "dr.suparno",
   "password": "secret123"
 }
 
-// Response (200)
+// Response 200: ApiResponse<AuthResultDto>
 {
   "success": true,
+  "message": "Login berhasil",
+  "errors": null,
   "data": {
     "accessToken": "eyJhbGciOiJIUzI1...",
-    "refreshToken": "5f0b8c9d-...",
+    "refreshToken": "d0FhYmNkZWYxMj...",            // random base64, DISIMPAN DB
     "expiresIn": 3600,
     "tokenType": "Bearer",
     "user": {
-      "id": 123,
+      "id": "11111111-2222-3333-4444-555555555555",
       "username": "dr.suparno",
+      "email": "suparno@hms.local",
       "fullName": "dr. Suparno, Sp.PD",
-      "roles": ["Doctor"],
-      "correlationId": "req-abc123"
+      "phoneNumber": null,
+      "isActive": true,
+      "roles": [ "Doctor" ]
     }
   }
 }
 ```
 
+#### POST /api/v1/auth/refresh
+```json
+// Request: RefreshTokenCommand
+{
+  "refreshToken": "d0FhYmNkZWYxMj...",
+  "clientId": null
+}
+// Response 200 sama dgn login (access+refresh baru, refresh lama di-revoke & diganti)
+```
+
+#### POST /api/v1/auth/revoke  (logout)
+```json
+// Request: RevokeTokenCommand
+{ "refreshToken": "d0FhYmNkZWYxMj..." }
+// Response 200: { success:true, message:"Refresh token dicabut", data:null }
+```
+
+#### POST /api/v1/auth/change-password
+```json
+// Request: ChangePasswordCommand
+{
+  "userId": "11111111-2222-3333-4444-555555555555",
+  "currentPassword": "oldP@ss",
+  "newPassword": "NewP@ss123"
+}
+// 200 -> message "Password berhasil diubah"
+```
+
+#### POST /api/v1/users  (register)
+```json
+// Request: RegisterUserCommand
+{
+  "username": "nurse.anisa",
+  "email": "anisa@hms.local",
+  "fullName": "Anisa Putri",
+  "phoneNumber": "081234567890",
+  "password": "Secret@123",
+  "roles": [ "Nurse" ]
+}
+// Response 201/200: data = { "id": "11..g" } ; message "User dibuat"
+```
+
+#### GET /api/v1/users  (list; query string)
+`?page=1&pageSize=10&search=anisa`
+```json
+// Response 200 (PagedResult<UserDto>)
+{
+  "success": true, "message": "Success", "errors": null,
+  "data": {
+    "pageIndex": 1, "pageSize": 10, "totalCount": 1,
+    "items": [
+      { "id": "11..g", "username": "nurse.anisa", "email": "anisa@hms.local",
+        "fullName": "Anisa Putri", "phoneNumber": "081234567890",
+        "isActive": true, "roles": [ "Nurse" ] }
+    ]
+  }
+}
+```
+
+#### POST /api/v1/users/{id}/roles  (assign/replace roles)
+```json
+// Request: AssignRolesCommand
+{ "roles": [ "Admin", "Nurse" ] }
+// Response 200 -> message "Roles diperbarui"
+```
+
+#### GET /api/v1/users/roles
+```json
+// Response 200: data = [ { "id":"..g", "name":"Doctor", "description":"..." }, ... ]
+```
+
+> Error mapping umum (oleh `ExceptionHandlingMiddleware`):
+> Unauthorized → 401 "Invalid username or password" / "Account is locked...";
+> NotFound → 404; Conflict → 409; BusinessRuleViolation/Validation → 400 dgn `errors[]`.
+
 ---
 
 ## 3. Patient Service Endpoints
+
+> 🔲 Draft rancangan (di bawah masih ber-prefix tanpa `/api/v1` & `Id int`). Acuan kontrak terkini untuk service ini ada di `05-Microservices/02-patient-service.md` (preview endpoint berbasis `/api/v1` & Guid).
 
 | Method | URL | Deskripsi | Auth | Role |
 |---|---|---|---|---|
@@ -164,6 +247,8 @@ Response pagination:
 
 ## 4. Doctor Service Endpoints
 
+> 🔲 Draft rancangan (di bawah : prefix tanpa `/api/v1`, `Id int`.) Acuan kontrak terkini: `05-Microservices/03-doctor-service.md` (blueprint `Guid`, `/api/v1`).
+
 ### Doctor Profile
 | Method | URL | Deskripsi | Auth | Role |
 |---|---|---|---|---|
@@ -207,6 +292,8 @@ Response pagination:
 ---
 
 ## 5. Appointment Service Endpoints
+
+> 🔲 Draft rancangan (di bawah : prefix tanpa `/api/v1`, `Id int`.) Acuan kontrak terkini: `05-Microservices/04-appointment-service.md` (blueprint `Guid`, `/api/v1`).
 
 ### Appointment CRUD
 | Method | URL | Deskripsi | Auth | Role |
@@ -256,275 +343,240 @@ Response pagination:
 
 ---
 
-## 6. Medical Record Service Endpoints
+## 6. Medical Record Service Endpoints (blueprint)
 
-### Medical Records
-| Method | URL | Deskripsi | Auth | Role |
-|---|---|---|---|---|
-| POST | `/api/medical-records` | Buat rekam medis baru | Bearer | Doctor, Nurse |
-| GET | `/api/medical-records/patient/{patientId}` | Semua rekam medis pasien | Bearer | Doctor, Nurse, Admin |
-| GET | `/api/medical-records/{id}` | Detail rekam medis | Bearer | Doctor, Nurse, Admin |
-| PUT | `/api/medical-records/{id}` | Update rekam medis | Bearer | Doctor, Admin |
+> Service ini **belum dikoding** — kontrak di bawah bersifat *draft rencana* (prefix `/api/v1`). Selaraskan dgn `05-Microservices/05-…` + DTO saat implement.
 
-### Vital Signs / Triage
-| Method | URL | Deskripsi | Auth | Role |
-|---|---|---|---|---|
-| POST | `/api/medical-records/{recordId}/vital-signs` | Input tanda vital | Bearer | Doctor, Nurse |
-| GET | `/api/medical-records/{patientId}/vital-signs/latest` | Vital signs terakhir | Bearer | Doctor, Nurse |
+### Rekam Medis
+| Method | URL | Deskripsi | Auth (rencana) |
+|---|---|---|---|
+| POST | `/api/v1/medical-records` | Buat draft rekam utk kunjungan | Doctor |
+| GET | `/api/v1/medical-records/patient/{patientId}` | Semua rekam pasien (page) | Doctor/Nurse/Admin; pasien = own |
+| GET | `/api/v1/medical-records/{id}` | Detail rekam + subkoleksi | berdasar rule akses |
+| PUT | `/api/v1/medical-records/{id}` | Update draf | Doctor |
+| POST | `/api/v1/medical-records/{id}/finalize` | Finalize (kunci) | Doctor ybs |
 
-### Diagnosis
-| Method | URL | Deskripsi | Auth | Role |
-|---|---|---|---|---|
-| POST | `/api/medical-records/{recordId}/diagnoses` | Tambah diagnosis | Bearer | Doctor |
-| GET | `/api/medical-records/{recordId}/diagnoses` | List diagnosis | Bearer | Doctor, Admin |
+### Vital Signs
+| Method | URL | Deskripsi | Auth |
+|---|---|---|---|
+| POST | `/api/v1/medical-records/{id}/vital-signs` | Tambah vital | Doctor/Nurse |
+| GET | `/api/v1/medical-records/patient/{patientId}/vital-signs/latest` | Vital terakhir | Doctor/Nurse |
 
-### Request (POST /api/medical-records)
+### Diagnosis / Treatment / Orders
+| Method | URL | Deskripsi | Auth |
+|---|---|---|---|
+| POST | `/api/v1/medical-records/{id}/diagnoses` | Tambah diagnosis (ICD-10) | Doctor |
+| GET | `/api/v1/medical-records/{recordId}/diagnoses` | List diagnosis | Doctor/Admin |
+| POST | `/api/v1/medical-records/{id}/treatments` | Tambah tindakan | Doctor/Nurse |
+| POST | `/api/v1/medical-records/{id}/prescriptions` | Buat order resep → Pharmacy | Doctor |
+| POST | `/api/v1/medical-records/{id}/lab-orders` | Buat order lab → Lab | Doctor |
+
+### Contoh Request/Response (draft)
+
+#### POST /api/v1/medical-records
 ```json
+// Request
 {
-  "appointmentId": 1,
-  "patientId": 1,
-  "doctorId": 5,
+  "appointmentId": "11111111-...",
+  "patientId": "aaaaaaaa-...",
+  "doctorId": "bbbbbbbb-...",
   "visitType": "Outpatient",
-  "subjective": "Pasien mengeluh demam sejak 2 hari lalu, disertai batuk",
-  "objective": "Suhu 38.5°C, tensi 120/80, nadi 90x/mnt",
-  "assessment": "Febris, kemungkinan ISPA",
-  "plan": "Resep antibiotik, paracetamol, kontrol 3 hari",
-  "vitalSigns": {
-    "temperature": 38.5,
-    "systolic": 120,
-    "diastolic": 80,
-    "heartRate": 90,
-    "respiratoryRate": 20,
-    "oxygenSaturation": 98,
-    "weightKg": 68,
-    "heightCm": 170
-  },
-  "diagnosisCodes": ["J06.9", "R50.9"],
-  "prescriptionNotes": "Amoxicillin 500mg 3x1, Paracetamol 500mg 3x1"
+  "department": "Poli Umum",
+  "subjective": "Demam dan batuk sejak 2 hari",
+  "objective": "T: 38.5 C, TD 120/80",
+  "assessment": "Febris, suspek ISPA",
+  "plan": "Terapi simptomatik",
+  "vitalSigns": { "temperature": 38.5, "systolic":120, "diastolic":80, "heartRate":90, "oxygenSaturation":98 },
+  "diagnosisCodes": ["J06.9"]
 }
+// Response 201: ApiResponse -> { "success":true, "data": { "id":"ff..0", "recordNumber":"MRR-2026-0001",
+//    "status":"Draft" }, "message":"Rekam dibuat" }
 ```
+
+#### POST /api/v1/medical-records/{id}/finalize
+```json
+// Response 200: { success:true, message:"Rekam difinalisasi", data:{ "id":"ff..", "status":"Finalized", "finalizedAt":"2026-01-20T11:00:00Z" } }
+```
+> Catatan pasca-final: update hanya melalui `amend` tercatat.
 
 ---
 
-## 7. Pharmacy Service Endpoints
+## 7. Pharmacy Service Endpoints (blueprint)
+
+> 🔲 Belum dikoding — kontrak draft, prefix `/api/v1`, id Guid. Konten lama (versi `int`) tetap sebagai contoh bentuk payload item resep.
 
 ### Prescription
-| Method | URL | Deskripsi | Auth | Role |
-|---|---|---|---|---|
-| POST | `/api/pharmacy/prescriptions` | Buat resep dari dokter | Bearer | Doctor |
-| GET | `/api/pharmacy/prescriptions/{id}` | Detail resep | Bearer | Doctor, Pharmacist |
-| GET | `/api/pharmacy/prescriptions/patient/{patientId}` | Resep pasien | Bearer | Doctor, Pharmacist |
-| PUT | `/api/pharmacy/prescriptions/{id}` | Update resep | Bearer | Doctor (draft only) |
+| Method | URL | Deskripsi | Auth rencana |
+|---|---|---|---|
+| POST | `/api/v1/pharmacy/prescriptions` | Buat resep (dari dokter/medical record) | Doctor |
+| GET | `/api/v1/pharmacy/prescriptions/{id}` | Detail + items | Doctor/Pharmacist |
+| GET | `/api/v1/pharmacy/prescriptions/patient/{patientId}` | Riwayat resep pasien | Doctor/Pharmacist |
+| PUT | `/api/v1/pharmacy/prescriptions/{id}` | Ubah (draft) | Doctor |
+| POST | `/api/v1/pharmacy/prescriptions/{id}/cancel` | Batal | Doctor |
 
 ### Dispensing
-| Method | URL | Deskripsi | Auth | Role |
-|---|---|---|---|---|
-| POST | `/api/pharmacy/prescriptions/{id}/dispense` | Dispense obat | Bearer | Pharmacist |
-| POST | `/api/pharmacy/dispensing` | Proses dispensing (with inventory check) | Bearer | Pharmacist |
-| GET | `/api/pharmacy/dispensing/{id}` | Status dispensing | Bearer | Pharmacist, Doctor |
+| Method | URL | Deskripsi | Auth |
+|---|---|---|---|
+| POST | `/api/v1/pharmacy/prescriptions/{id}/dispense` | Dispense penuh/partial | Pharmacist |
+| GET | `/api/v1/pharmacy/dispensings?status=` | Antrean/status dispensing | Pharmacist |
 
-### Request (POST /api/pharmacy/prescriptions)
+### Contoh payload resep (draft) — form GUID
 ```json
+// POST /api/v1/pharmacy/prescriptions
 {
-  "medicalRecordId": 100,
-  "patientId": 1,
-  "doctorId": 5,
-  "appointmentId": 1,
-  "date": "2026-01-20",
-  "status": "Pending",
+  "patientId": "11111111-...",
+  "doctorId": "22222222-...",
+  "medicalRecordId": "33333333-...",
+  "priority": "Normal",
+  "notes": "Antibiotik 7 hari",
   "items": [
     {
-      "inventoryItemId": 45,
+      "inventoryItemId": "44444444-...",
       "medicationName": "Amoxicillin 500mg",
-      "strength": "500mg",
       "dosage": "3x sehari",
       "durationDays": 7,
       "quantity": 21,
+      "unit": "pcs",
       "instructions": "Diminum setelah makan"
-    },
-    {
-      "inventoryItemId": 78,
-      "medicationName": "Paracetamol 500mg",
-      "strength": "500mg",
-      "dosage": "3x sehari",
-      "durationDays": 5,
-      "quantity": 15,
-      "instructions": "Saat demam"
     }
   ]
 }
+// Response 201 -> data { "id":"..g","prescriptionNumber":"RCP-2026-0001","status":"Pending" }
 ```
+> **Draft lengkap (versi int)** untuk melihat kemungkinan field obat tersimpan — tetap dipakai sebagai referensi skema; tuangkan ulang ke Guid saat implement.
 
 ---
 
-## 8. Laboratory Service Endpoints
+## 8. Laboratory Service Endpoints (blueprint)
+
+> 🔲 Draft — prefix `/api/v1`, id Guid. Versi lama (`/api/laboratory/...`) berfungsi sebagai referensi bentuk payload hasil.
 
 ### Lab Orders
-| Method | URL | Deskripsi | Auth | Role |
-|---|---|---|---|---|
-| POST | `/api/laboratory/orders` | Buat order pemeriksaan lab | Bearer | Doctor |
-| GET | `/api/laboratory/orders` | List orders (filter by status/patient) | Bearer | LabStaff, Doctor |
-| GET | `/api/laboratory/orders/{id}` | Detail order | Bearer | LabStaff, Doctor, Admin |
-| POST | `/api/laboratory/orders/{id}/collect` | Sample collection | Bearer | LabStaff, Nurse |
-| GET | `/api/laboratory/tests` | Master data tests | Bearer | LabStaff, Doctor, Admin |
+| Method | URL | Deskripsi | Auth rencana |
+|---|---|---|---|
+| POST | `/api/v1/laboratory/orders` | Buat order lab (multi test) | Doctor |
+| GET | `/api/v1/laboratory/orders` | List (status/patient/date) | LabStaff/Doctor |
+| GET | `/api/v1/laboratory/orders/{id}` | Detail + hasil | LabStaff/Doctor/Admin |
+| POST | `/api/v1/laboratory/orders/{id}/collect` | Koleksi sampel | LabStaff/Nurse |
+| POST | `/api/v1/laboratory/orders/{id}/cancel` | Batal | Doctor/LabStaff |
 
 ### Lab Results
-| Method | URL | Deskripsi | Auth | Role |
-|---|---|---|---|---|
-| POST | `/api/laboratory/orders/{id}/results` | Input hasil lab | Bearer | LabStaff |
-| GET | `/api/laboratory/orders/{id}/results` | Lihat hasil lab | Bearer | Doctor, LabStaff, Admin |
-| GET | `/api/laboratory/patients/{patientId}/results` | Semua hasil lab pasien | Bearer | Doctor, LabStaff |
+| Method | URL | Deskripsi | Auth |
+|---|---|---|---|
+| POST | `/api/v1/laboratory/orders/{orderTestId}/results` | Input hasil | LabStaff |
+| GET | `/api/v1/laboratory/orders/{id}/results` | Lihat hasil | Doctor/LabStaff/Admin |
+| GET | `/api/v1/laboratory/patients/{patientId}/results` | Semua hasil pasien | Doctor/LabStaff |
 
-### Request (POST /api/laboratory/orders)
-```json
-{
-  "visitId": "APT-20260120-001",
-  "patientId": 1,
-  "doctorId": 5,
-  "orderDate": "2026-01-20",
-  "priority": "Routine",
-  "tests": [
-    {
-      "testCode": "CBC",
-      "testName": "Complete Blood Count",
-      "specimenType": "Blood"
-    },
-    {
-      "testCode": "GLU",
-      "testName": "Fasting Blood Glucose",
-      "specimenType": "Blood"
-    }
-  ],
-  "billingReferenceId": "BL-20260120-010"
-}
-```
+### Catalog
+| Method | URL | Deskripsi | Auth |
+|---|---|---|---|
+| GET | `/api/v1/laboratory/tests` | Master test | LabStaff/Doctor/Admin |
+| POST | `/api/v1/laboratory/tests` | Tambah test | Admin |
 
-### Response (POST hasil lab)
+### Contoh (draft, Guid)
 ```json
-{
-  "success": true,
-  "data": {
-    "testCode": "CBC",
-    "results": [
-      { "parameter": "WBC", "value": "8.5", "unit": "10^3/uL", "referenceRange": "4.5 - 11.0", "flag": "Normal" },
-      { "parameter": "Hemoglobin", "value": "13.5", "unit": "g/dL", "referenceRange": "12.0 - 16.0", "flag": "Normal" },
-      { "parameter": "Platelets", "value": "250", "unit": "10^3/uL", "referenceRange": "150 - 400", "flag": "Normal" }
-    ],
-    "status": "Completed",
-    "completedBy": "aq_analis01",
-    "resultDate": "2026-01-20T14:00:00Z"
-  }
-}
+// POST /api/v1/laboratory/orders
+{ "patientId":"11..g", "doctorId":"22..g", "visitId":"33..g",
+  "priority":"Routine",
+  "tests":[ { "catalogId":"44..g", "specimenType":"Blood" } ] }
+// Response 201 -> { "success":true, "data": { "id":"..g","orderNumber":"LO-2026-0001","status":"Ordered" } }
 ```
 
 ---
 
-## 9. Billing Service Endpoints
+## 9. Billing Service Endpoints (blueprint)
+
+> 🔲 Draft — prefix `/api/v1`, id Guid.
 
 ### Invoice / Billing
-| Method | URL | Deskripsi | Auth | Role |
-|---|---|---|---|---|
-| POST | `/api/billing/invoices` | Buat invoice (dari appointment/lab/pharmacy) | Bearer | BillingStaff, Admin |
-| GET | `/api/billing/invoices` | List invoices | Bearer | BillingStaff, Admin |
-| GET | `/api/billing/invoices/{id}` | Detail invoice | Bearer | All (owner) |
-| GET | `/api/billing/invoices/patient/{patientId}` | Invoices pasien | Bearer | Patient, BillingStaff, Admin |
-| POST | `/api/billing/invoices/{id}/payment` | Proses pembayaran | Bearer | BillingStaff, Admin |
-| GET | `/api/billing/payments` | List payments | Bearer | BillingStaff, Admin |
+| Method | URL | Deskripsi | Auth rencana |
+|---|---|---|---|
+| POST | `/api/v1/billing/invoices` | Buat invoice (dari appointment/lab/pharmacy/tindakan) | Billing/Admin |
+| GET | `/api/v1/billing/invoices` | List invoices (status/date/paging) | Billing/Admin |
+| GET | `/api/v1/billing/invoices/{id}` | Detail invoice + line items | Owner/Billing/Admin |
+| GET | `/api/v1/billing/invoices/patient/{patientId}` | Invoices pasien | Patient/Billing/Admin |
+| POST | `/api/v1/billing/invoices/{id}/issue` | Terbitkan invoice | Billing/Admin |
+| POST | `/api/v1/billing/invoices/{id}/payment` | Catat pembayaran | Billing/Admin |
+| POST | `/api/v1/billing/invoices/{id}/cancel` | Batal | Billing/Admin |
 
 ### Pricing / Master
-| Method | URL | Deskripsi | Auth | Role |
-|---|---|---|---|---|
-| GET | `/api/billing/services` | Master data layanan & biaya | Bearer | BillingStaff, Admin |
-| POST | `/api/billing/services` | Tambah master layanan | Bearer | Admin |
+| Method | URL | Deskripsi | Auth |
+|---|---|---|---|
+| GET | `/api/v1/billing/services` | Master tarif & layanan | Billing/Admin |
+| POST | `/api/v1/billing/services` | Tambah tarif | Admin |
 
-### Invoice Request (Create)
+### Contoh request/response (draft, Guid)
 ```json
+// POST /api/v1/billing/invoices
 {
-  "patientId": 1,
-  "appointmentId": 1,
+  "patientId": "11111111-...",
   "invoiceType": "Consultation",
+  "appointmentId": "33333333-...",
   "currency": "IDR",
-  "lineItems": [
-    {
-      "serviceCode": "CONSULT-GENERAL",
-      "description": "Konsultasi Dokter Umum",
-      "quantity": 1,
-      "unitPrice": 150000
-    },
-    {
-      "serviceCode": "LAB-CBC",
-      "description": "Complete Blood Count",
-      "quantity": 1,
-      "unitPrice": 85000
-    }
-  ],
-  "discountAmount": 0,
-  "taxPercent": 0,
-  "paymentMethod": "Cash"
+  "lineItems": [ { "serviceCode": "CONSULT-GENERAL", "quantity": 1 } ]
 }
+// Response 201 -> data: { "id":"..g","invoiceNumber":"INV-20260120-0001",
+//   "status":"Draft","subtotal":150000,"totalAmount":150000,"amountDue":150000 }
 ```
 
 ---
 
-## 10. Inventory Service Endpoints
+## 10. Inventory Service Endpoints (blueprint)
 
-### Items Management
-| Method | URL | Deskripsi | Auth | Role |
-|---|---|---|---|---|
-| POST | `/api/inventory/items` | Tambah item baru | Bearer | Pharmacist, Admin |
-| GET | `/api/inventory/items` | List semua items | Bearer | Pharmacist, Admin, Doctor |
-| GET | `/api/inventory/items/{id}` | Detail item | Bearer | Pharmacist, Admin |
-| PUT | `/api/inventory/items/{id}` | Update item | Bearer | Pharmacist, Admin |
-| GET | `/api/inventory/items/low-stock` | List stock menipis | Bearer | Pharmacist, Admin |
-| POST | `/api/inventory/items/{id}/adjust` | Adjust stock (manual) | Bearer | Pharmacist, Admin |
+> 🔲 Draft — prefix `/api/v1`, id Guid.
 
-### Stock Movements
-| Method | URL | Deskripsi | Auth | Role |
-|---|---|---|---|---|
-| POST | `/api/inventory/receivings` | Terima barang masuk | Bearer | Pharmacist |
-| GET | `/api/inventory/movements` | Riwayat stock movements | Bearer | Pharmacist, Admin |
-| GET | `/api/inventory/movements/expiring` | Item mendekati expiration | Bearer | Pharmacist |
+### Items
+| Method | URL | Deskripsi | Auth rencana |
+|---|---|---|---|
+| POST | `/api/v1/inventory/items` | Tambah item | Pharmacist/Admin |
+| GET | `/api/v1/inventory/items` | List + filter (category/search) | Pharmacist/Admin/Doctor(look) |
+| GET | `/api/v1/inventory/items/{id}` | Detail item + batches | Pharmacist/Admin |
+| PUT | `/api/v1/inventory/items/{id}` | Update item | Pharmacist/Admin |
+| GET | `/api/v1/inventory/items/low-stock` | List stok menipis | Pharmacist/Admin |
+| GET | `/api/v1/inventory/items/expiring` | Mendekati kedaluwarsa | Pharmacist |
+| POST | `/api/v1/inventory/items/{id}/adjust` | Adjust manual | Pharmacist/Admin |
 
-### Request (POST /api/inventory/receivings)
+### Stock Movement & Supplier
+| Method | URL | Deskripsi | Auth |
+|---|---|---|---|
+| POST | `/api/v1/inventory/receivings` | Terima barang masuk (buat batch) | Pharmacist/Admin |
+| GET | `/api/v1/inventory/movements` | Riwayat movements (item/date) | Pharmacist/Admin |
+| GET/POST | `/api/v1/inventory/suppliers` | Master supplier | GET (login)/POST admin |
+
+### Contoh request (draft)
 ```json
-{
-  "supplierName": "PT. Farmasi Indonesia",
-  "receiptNumber": "RCP-2026-001",
-  "receivedDate": "2026-01-20",
-  "items": [
-    {
-      "itemId": 45,
-      "receivedQuantity": 500,
-      "batchNumber": "AMX-2026-0145",
-      "expirationDate": "2027-06-30"
-    }
-  ]
-}
+// POST /api/v1/inventory/items/{id}/adjust
+{ "quantityChange": 15, "reason": "Stock opname", "by": "ph1" }
+// POST /api/v1/inventory/receivings
+{ "supplierId":"11..g", "receivedDate":"2026-01-20",
+  "items":[{ "itemId":"22..g","receivedQuantity":500,"batchNumber":"AMX-2026-0145",
+             "expirationDate":"2027-06-30","unitCost":12500.00 }] }
+// Response 200 -> current stock bertambah, movement type=IN tercatat
 ```
 
 ---
 
-## 11. Notification Service Endpoints
+## 11. Notification Service Endpoints (blueprint)
 
-### Notification
-| Method | URL | Deskripsi | Auth | Role |
-|---|---|---|---|---|
-| POST | `/api/notifications` | Kirim notifikasi (API) | Bearer | System, Admin |
-| GET | `/api/notifications/user/{userId}` | List notifikasi user | Bearer | User owner |
-| GET | `/api/notifications/user/{userId}/unread-count` | Jumlah unread | Bearer | User owner |
-| PUT | `/api/notifications/{id}/read` | Tandai dibaca | Bearer | User owner |
-| PUT | `/api/notifications/{id}/delivered` | Update delivery status | Internally | System |
+> 🔲 Draft — prefix `/api/v1`. Service ini kebanyakan **consumer event**; endpoint di bawah utk mengelola inbox/template/delivery via API.
 
-### Request (POST /api/notifications)
+### Notification (Inbox/Management)
+| Method | URL | Deskripsi | Auth rencana |
+|---|---|---|---|
+| POST | `/api/v1/notifications` | Kirim notifikasi (API/system) | System/Admin |
+| GET | `/api/v1/notifications/user/{userId}` | Peroleh kotak masuk | Owner |
+| GET | `/api/v1/notifications/user/{userId}/unread-count` | Jumlah unread (badge) | Owner |
+| GET | `/api/v1/notifications/{id}` | Detail notif/status delivery | Owner/Admin |
+| PUT | `/api/v1/notifications/{id}/read` | Tandai dibaca | Owner |
+| GET/POST | `/api/v1/notifications/templates` | Master template | Admin |
+
+### Contoh request (draft — versi lama § lampiran referensi bentuk payload)
 ```json
+// POST /api/v1/notifications
 {
-  "recipientUserId": 123,
-  "recipientContact": {
-    "email": "budi@gmail.com",
-    "phone": "081234567890"
-  },
-  "channels": ["Email", "SMS", "Push"],
-  "templateCode": "APPOINTMENT_REMINDER",
+  "recipientUserId": "11111111-...",
+  "typeCode": "APPOINTMENT_REMINDER",
+  "channels": ["Email","SMS"],
   "payload": {
     "patientName": "Budi Santoso",
     "doctorName": "dr. Suparno, Sp.PD",
@@ -532,9 +584,9 @@ Response pagination:
     "appointmentTime": "09:00",
     "location": "Poli Umum - R-101"
   },
-  "priority": "Normal",
-  "scheduledAt": "2026-01-20T08:00:00Z"
+  "priority": "Normal"
 }
+// -> Template di-render dari typeCode; status Pending → provider dispatch → log
 ```
 
 ---

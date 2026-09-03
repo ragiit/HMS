@@ -40,8 +40,8 @@ public static class DependencyInjection
         services.AddScoped<ITokenService, TokenService>();
 
         // Messaging + outbox processor
-        services.AddHmsMessaging(configuration);
-        services.AddHmsOutboxProcessor();
+        //services.AddHmsMessaging(configuration);
+        //services.AddHmsOutboxProcessor();
 
         // Seeder
         services.AddScoped<IdentityDbSeeder>();
