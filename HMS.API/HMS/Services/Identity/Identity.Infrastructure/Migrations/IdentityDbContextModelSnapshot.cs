@@ -203,7 +203,6 @@ namespace Identity.Infrastructure.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTimeOffset?>("ModifiedDate")
-                        .HasMaxLength(100)
                         .HasColumnType("datetimeoffset");
 
                     b.Property<string>("PasswordHash")

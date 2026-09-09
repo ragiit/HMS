@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Identity.Infrastructure.Migrations
 {
     [DbContext(typeof(IdentityDbContext))]
-    [Migration("20260909084850_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260909085814_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -206,7 +206,6 @@ namespace Identity.Infrastructure.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTimeOffset?>("ModifiedDate")
-                        .HasMaxLength(100)
                         .HasColumnType("datetimeoffset");
 
                     b.Property<string>("PasswordHash")

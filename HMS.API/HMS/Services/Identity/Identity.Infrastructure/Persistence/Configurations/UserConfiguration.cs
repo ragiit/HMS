@@ -37,9 +37,9 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         // Audit
         builder.Property(x => x.CreatedDate).IsRequired();
         builder.Property(x => x.CreatedBy).HasMaxLength(100);
-        builder.Property(x => x.ModifiedDate).HasMaxLength(100);
-        builder.Property(x => x.DeletedDate);
+        builder.Property(x => x.ModifiedDate);
         builder.Property(x => x.ModifiedBy).HasMaxLength(100);
+        builder.Property(x => x.DeletedDate);
         builder.Property(x => x.IsDeleted).IsRequired();
 
         // Index
@@ -50,9 +50,15 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasQueryFilter(x => !x.IsDeleted);
 
         // Roles
-        builder.HasMany(x => x.Roles).WithOne(r => r.User).HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasMany(x => x.Roles)
+            .WithOne(r => r.User)
+            .HasForeignKey(r => r.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // Refresh Tokens
-        builder.HasMany(x => x.RefreshTokens).WithOne(t => t.User).HasForeignKey(t => t.UserId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasMany(x => x.RefreshTokens)
+            .WithOne(t => t.User)
+            .HasForeignKey(t => t.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

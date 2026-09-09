@@ -14,11 +14,13 @@ public sealed class UserRepository : IUserRepository
         => _dbContext.Users
             .Include(u => u.Roles)
                 .ThenInclude(ur => ur.Role)
+            .Include(u => u.RefreshTokens)
             .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
 
     public Task<User?> GetByLoginAsync(string login, CancellationToken cancellationToken = default)
         => _dbContext.Users
             .Include(u => u.Roles)
                 .ThenInclude(ur => ur.Role)
+            .Include(u => u.RefreshTokens)
             .FirstOrDefaultAsync(u => u.Username == login || u.Email == login, cancellationToken);
 }
