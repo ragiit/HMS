@@ -7,7 +7,7 @@ public sealed class LoginCommandValidator : AbstractValidator<LoginCommand>
 {
     public LoginCommandValidator()
     {
-        RuleFor(x => x.Username).NotEmpty().MaximumLength(50);
+        RuleFor(x => x.UsernameOrEmail).NotEmpty().MaximumLength(50);
         RuleFor(x => x.Password).NotEmpty();
     }
 }

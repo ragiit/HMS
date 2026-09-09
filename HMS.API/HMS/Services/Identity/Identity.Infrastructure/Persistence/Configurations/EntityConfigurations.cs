@@ -11,11 +11,9 @@ public sealed class RoleConfiguration : IEntityTypeConfiguration<Role>
     {
         builder.ToTable("Roles");
         builder.HasKey(x => x.Id);
-
         builder.Property(x => x.Name).HasMaxLength(50).IsRequired();
         builder.Property(x => x.NormalizedName).HasMaxLength(50).IsRequired();
         builder.Property(x => x.Description).HasMaxLength(200);
-
         builder.HasIndex(x => x.Name).IsUnique();
         builder.HasIndex(x => x.NormalizedName).IsUnique();
     }
@@ -27,13 +25,8 @@ public sealed class UserRoleConfiguration : IEntityTypeConfiguration<UserRole>
     {
         builder.ToTable("UserRoles");
         builder.HasKey(x => x.Id);
-
         builder.HasIndex(x => new { x.UserId, x.RoleId }).IsUnique();
-
-        builder.HasOne(x => x.Role)
-            .WithMany()
-            .HasForeignKey(x => x.RoleId)
-            .OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(x => x.Role).WithMany().HasForeignKey(x => x.RoleId).OnDelete(DeleteBehavior.Cascade);
     }
 }
 
@@ -43,7 +36,6 @@ public sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refresh
     {
         builder.ToTable("RefreshTokens");
         builder.HasKey(x => x.Id);
-
         builder.Property(x => x.Token).HasMaxLength(500).IsRequired();
         builder.HasIndex(x => x.Token).IsUnique();
         builder.HasIndex(x => x.UserId);
@@ -56,12 +48,9 @@ public sealed class OutboxMessageConfiguration : IEntityTypeConfiguration<Outbox
     {
         builder.ToTable("OutboxEvents");
         builder.HasKey(x => x.Id);
-
         builder.Property(x => x.Type).HasMaxLength(150).IsRequired();
         builder.Property(x => x.Payload).IsRequired();
         builder.Property(x => x.LastError).HasMaxLength(500);
-
-        builder.HasIndex(x => new { x.Status, x.OccurredOn })
-            .HasFilter("[Status] = 0");
+        builder.HasIndex(x => new { x.Status, x.OccurredOn }).HasFilter("[Status] = 0");
     }
 }

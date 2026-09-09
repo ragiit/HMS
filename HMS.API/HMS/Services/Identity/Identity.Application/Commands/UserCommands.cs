@@ -1,11 +1,11 @@
+using HMS.Shared.Abstractions;
 using Identity.Application.DTOs;
 using MediatR;
 
 namespace Identity.Application.Commands;
 
 /// <summary>Login user, menghasilkan JWT + refresh token.</summary>
-public sealed record LoginCommand(string Username, string Password, string? ClientId = null) : IRequest<AuthResultDto>;
-
+public sealed record LoginCommand(string UsernameOrEmail, string Password, string? ClientId = null) : IRequest<AuthResultDto>;
 /// <summary>Registrasi user baru oleh admin, langsung dengan password.</summary>
 public sealed record RegisterUserCommand(
     string Username,
@@ -39,3 +39,11 @@ public sealed record UpdateUserProfileCommand(
     string Email,
     string FullName,
     string? PhoneNumber) : IRequest<Unit>;
+
+public sealed record ForgotPasswordCommand(string Email) : IRequest<Result>;
+
+public sealed record ResetPasswordCommand(
+    string Email,
+    string Token,
+    string NewPassword
+) : IRequest<Result>;

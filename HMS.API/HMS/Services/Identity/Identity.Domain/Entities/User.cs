@@ -21,7 +21,13 @@ public sealed class User : AggregateRoot<Guid>, IAuditableEntity
     public bool IsLockedOut { get; private set; }
     public DateTimeOffset? LockoutEndDate { get; private set; }
     public DateTimeOffset? LastLoginDate { get; private set; }
+    public string? LastLoginIp { get; private set; }
     public int AccessFailedCount { get; private set; }
+
+    // Forgot / Reset Password Token
+    public string? PasswordResetToken { get; private set; }
+
+    public DateTimeOffset? PasswordResetTokenExpiresAtUtc { get; private set; }
 
     // Audit & soft delete
     public DateTimeOffset CreatedDate { get; private set; }
@@ -52,6 +58,14 @@ public sealed class User : AggregateRoot<Guid>, IAuditableEntity
     {
         PasswordHash = passwordHash;
         PasswordSalt = passwordSalt;
+        PasswordResetToken = null;
+        PasswordResetTokenExpiresAtUtc = null;
+    }
+
+    public void GeneratePasswordResetToken(string token, DateTimeOffset expiresAtUtc)
+    {
+        PasswordResetToken = token;
+        PasswordResetTokenExpiresAtUtc = expiresAtUtc;
     }
 
     public void AssignRole(Role role)
@@ -79,7 +93,12 @@ public sealed class User : AggregateRoot<Guid>, IAuditableEntity
 
     public void Deactivate() => IsActive = false;
 
-    public void RecordLogin() => LastLoginDate = DateTimeOffset.UtcNow;
+    public void RecordLogin(string? ipAddress = null)
+    {
+        LastLoginDate = DateTimeOffset.UtcNow;
+        LastLoginIp = ipAddress;
+        ResetFailedLogin();
+    }
 
     public void RecordFailedLogin(int maxAttempts = 5)
     {
@@ -96,6 +115,28 @@ public sealed class User : AggregateRoot<Guid>, IAuditableEntity
         AccessFailedCount = 0;
         IsLockedOut = false;
         LockoutEndDate = null;
+    }
+
+    public bool CheckIsLockedOut()
+    {
+        if (!IsLockedOut)
+            return false;
+
+        if (LockoutEndDate.HasValue && LockoutEndDate.Value <= DateTimeOffset.UtcNow)
+        {
+            ResetFailedLogin();
+            return false;
+        }
+
+        return true;
+    }
+
+    public void RevokeAllRefreshTokens(string reason, string? revokedByIp = null)
+    {
+        foreach (var token in RefreshTokens.Where(t => t.IsActive))
+        {
+            token.Revoke(reason, revokedByIp);
+        }
     }
 
     public void MarkDeleted()

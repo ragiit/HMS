@@ -34,6 +34,24 @@ public sealed class CurrentUser : IExecutionContext
     public string? TenantId =>
         User?.FindFirstValue("tenant_id") ?? User?.FindFirstValue("tenant");
 
+    public string? IpAddress
+    {
+        get
+        {
+            if (Http is null)
+                return null;
+
+            var forwarded = Http.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(forwarded))
+            {
+                // Ambil client IP pertama jika request melalui multi-hop proxy
+                return forwarded.Split(',')[0].Trim();
+            }
+
+            return Http.Connection.RemoteIpAddress?.ToString();
+        }
+    }
+
     public IReadOnlyList<string> Roles
     {
         get

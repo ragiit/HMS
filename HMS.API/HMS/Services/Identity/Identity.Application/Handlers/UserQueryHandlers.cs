@@ -77,6 +77,11 @@ public sealed class GetAllRolesQueryHandler : IRequestHandler<GetAllRolesQuery, 
     public async Task<IReadOnlyList<RoleDto>> Handle(GetAllRolesQuery request, CancellationToken ct)
     {
         var roles = await _roles.ListAsync(r => r.IsActive, ct);
-        return roles.Select(r => new RoleDto { Id = r.Id, Name = r.Name, Description = r.Description }).ToList();
+        return roles.Select(r => new RoleDto
+        {
+            Id = r.Id,
+            Name = r.Name,
+            Description = r.Description
+        }).ToList();
     }
 }

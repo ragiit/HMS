@@ -12,7 +12,9 @@ public sealed class RefreshToken : Entity<Guid>
     public string Token { get; private set; } = string.Empty;
     public DateTimeOffset ExpiresOn { get; private set; }
     public DateTimeOffset CreatedOn { get; private set; }
+    public string? CreatedByIp { get; private set; }
     public DateTimeOffset? RevokedOn { get; private set; }
+    public string? RevokedByIp { get; private set; }
     public string? ReplacedByToken { get; private set; }
     public string? ReasonRevoked { get; private set; }
     public string? ClientId { get; private set; }
@@ -22,7 +24,7 @@ public sealed class RefreshToken : Entity<Guid>
     private RefreshToken()
     { /* EF */ }
 
-    public RefreshToken(Guid userId, string token, DateTimeOffset expiresOn, string? clientId = null)
+    public RefreshToken(Guid userId, string token, DateTimeOffset expiresOn, string? clientId = null, string? createdByIp = null)
     {
         Id = Guid.NewGuid();
         UserId = userId;
@@ -30,14 +32,18 @@ public sealed class RefreshToken : Entity<Guid>
         ExpiresOn = expiresOn;
         CreatedOn = DateTimeOffset.UtcNow;
         ClientId = clientId;
+        CreatedByIp = createdByIp;
     }
 
-    public bool IsActive => RevokedOn is null && DateTimeOffset.UtcNow < ExpiresOn;
+    public bool IsExpired => DateTimeOffset.UtcNow >= ExpiresOn;
+    public bool IsRevoked => RevokedOn is not null;
+    public bool IsActive => !IsRevoked && !IsExpired;
 
-    public void Revoke(string? reason, string? replacedByToken = null)
+    public void Revoke(string? reason, string? revokedByIp = null, string? replacedByToken = null)
     {
         RevokedOn = DateTimeOffset.UtcNow;
         ReasonRevoked = reason;
+        RevokedByIp = revokedByIp;
         ReplacedByToken = replacedByToken;
     }
 }

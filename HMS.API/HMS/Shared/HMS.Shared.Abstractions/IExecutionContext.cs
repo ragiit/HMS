@@ -10,6 +10,7 @@ public interface IExecutionContext
     string? UserId { get; }
     string? UserName { get; }
     string? TenantId { get; }
+    string? IpAddress { get; }
     IReadOnlyList<string> Roles { get; }
 
     bool HasRole(string role);
